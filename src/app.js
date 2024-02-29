@@ -4,15 +4,38 @@ const app = express();
 const port = process.env.PORT;
 
 const connection = require('./db');
+const { swaggerDocs } = require('./swagger');
 
 app.use(express.json());
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+    swaggerDocs(app, port);
 });
 
 
 // Status endpoint
+/**
+* @openapi
+* /status:
+*   get:
+*     tags:
+*       - Check status
+*     responses:
+*       200:
+*         description: OK
+*         content:
+*           application/json:
+*             schema:
+*               type: string
+*               properties:
+*                 data:
+*                   type: string
+*               example:
+*                 running
+*       500:
+*         description: Internal Server Error
+*/
 app.get('/status', (request, response) => {
     response.status(200).send('Running');
 });
@@ -21,6 +44,29 @@ app.get('/status', (request, response) => {
 // CRUD operations
 
 // Get all tasks
+/**
+* @openapi
+* /tasks:
+*   get:
+*     tags:
+*       - Get all tasks
+*     responses:
+*       200:
+*         description: OK
+*         content:
+*           application/json:
+*             schema:
+*               type: object
+*               properties:
+*                 data:
+*                   type: array 
+*                   items: 
+*                     type: object
+*               example:
+*                 [{"id":1,"description":"Task 1","priority":"High","completed":0},{"id":2,"description":"Task 2","priority":"Low","completed":0},{"id":3,"description":"task 3","priority":"Medium","completed":1}]     
+*       500:
+*         description: Internal Server Error
+*/
 app.get('/tasks', async (request, response) => {
     try {
         const tasks = await new Promise((resolve, reject) => {
@@ -45,6 +91,40 @@ app.get('/tasks', async (request, response) => {
 
 
 // Get a task by id
+/**
+* @openapi
+* /tasks/{id}:
+*   get:
+*     tags:
+*       - Get task by ID     
+*     summary: Get a specific task by ID
+*     description: Returns a single task object based on the provided ID
+*     parameters:
+*       - in: path
+*         name: id
+*         required: true
+*         description: The ID of the task
+*         type: integer
+*     responses:
+*       200:
+*         description: Successful operation
+*         content:
+*           application/json:
+*             schema:
+*               type: object
+*               properties:
+*                 id:
+*                   type: integer
+*                   description: The ID of the task
+*                 data:
+*                   type: object
+*               example:
+*                 [{"id": 1, "description": "Task 1", "priority": "High", "completed": 0 }]
+*       404:
+*         description: Task not found
+*       500:
+*         description: Internal Server Error
+*/
 app.get('/tasks/:id', async (request, response) => {
     try {
         const taskId = request.params.id;
@@ -77,6 +157,45 @@ app.get('/tasks/:id', async (request, response) => {
 
 
 // Add a task
+/**
+* @openapi
+* /tasks/add:
+*   post:
+*     tags:
+*       - Add a task    
+*     summary: Add a task
+*     description: Adds a task to the database
+*     requestBody:
+*       required: true
+*       content:
+*         application/json:
+*           schema:
+*             type: object
+*             properties:
+*               description:
+*                 type: string
+*                 description: The description of the task
+*               priority:
+*                 type: string
+*                 description: The priority of the task
+*             example:
+*               description: Task 1
+*               priority: High
+*     responses:
+*       201:
+*         description: Task created
+*         content:
+*           application/json:
+*             schema:
+*               type: String
+*               properties:
+*                 data:
+*                   type: string
+*               example:
+*                 Task created
+*       500:
+*         description: Internal Server Error
+*/
 app.post('/tasks/add', async (request, response) => {
     try {
         const taskData = request.body; // Extraer datos de la solicitud
@@ -102,6 +221,54 @@ app.post('/tasks/add', async (request, response) => {
 
 
 // Update a task
+/**
+* @openapi
+* /tasks/update/{id}:
+*   put:
+*     tags:
+*       - Update a task    
+*     summary: Update a task
+*     description: Updates a task in the database based on the provided ID
+*     parameters:
+*       - in: path
+*         name: id
+*         required: true
+*         description: The ID of the task
+*         type: integer
+*     requestBody:
+*       required: true
+*       content:
+*         application/json:
+*           schema:
+*             type: object
+*             properties:
+*               description:
+*                 type: string
+*                 description: The description of the task
+*               priority:
+*                 type: string
+*                 description: The priority of the task
+*             example:
+*               description: Task 1
+*               priority: High
+*               completed: 0
+*     responses:
+*       200:
+*         description: Task updated
+*         content:
+*           application/json:
+*             schema:
+*               type: String
+*               properties:
+*                 data:
+*                   type: string
+*               example:
+*                 Task with id 1 updated
+*       404:
+*         description: Task not found
+*       500:
+*         description: Internal Server Error
+*/
 app.put('/tasks/update/:id', async (request, response) => {
     try {
         const taskId = request.params.id;
@@ -134,6 +301,37 @@ app.put('/tasks/update/:id', async (request, response) => {
 
 
 // Delete a task
+/**
+* @openapi
+* /tasks/delete/{id}:
+*   delete:
+*     tags:
+*       - Delete a task by ID     
+*     summary: Delete a specific task by ID
+*     description: Deletes a task from the database based on the provided ID
+*     parameters:
+*       - in: path
+*         name: id
+*         required: true
+*         description: The ID of the task to delete
+*         type: integer
+*     responses:
+*       200:
+*         description: Task deleted
+*         content:
+*           application/json:
+*             schema:
+*               type: String
+*               properties:
+*                 data:
+*                   type: string
+*               example:
+*                 Task with id 1 deleted
+*       404:
+*         description: Task not found
+*       500:
+*         description: Internal Server Error
+*/
 app.delete('/tasks/delete/:id', async (request, response) => {
     try {
         const taskId = request.params.id;
